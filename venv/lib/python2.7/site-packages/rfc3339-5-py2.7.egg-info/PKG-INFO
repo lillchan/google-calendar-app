@@ -1,0 +1,14 @@
+Metadata-Version: 1.0
+Name: rfc3339
+Version: 5
+Summary: Format dates according to the RFC 3339.
+Home-page: http://pypi.python.org/pypi/rfc3339/
+Author: Henry Precheur <henry@precheur.org>
+Author-email: Henry Precheur <henry@precheur.org>
+License: ISCL
+Description: Formats dates according to the :RFC:`3339`.
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Topic :: Internet
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python
