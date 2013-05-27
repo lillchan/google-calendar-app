@@ -7,50 +7,44 @@
 <body>
     <h1>Schedule It!</h1>
     <p>Find free blocks of time on your Google Calendar</p>
-    <p>First, please select the calendar you would like to search:</p>
-    <select name="calendarlist" value="choose a calendar" class="select-block span3">
-        {% for calendar in calendar_list %}
-        <option value="{{ calendar['summary'] }}">{{ calendar['summary'] }}</option>
-        {% endfor %}
-    </select>
-
-    <p>Then, give me some criteria to search by:</p>
     <form action="/search_events" method="POST" class="form-horizontal" id="searchApptsForm">
         <div class="control-group">
-            <label class="control-label" for="apptName">Appt Name:</label>
-            <div class="controls">
-                <input id="apptName" name="apptName" type="text"></input>
-            </div>
+            <p>First, please select the calendar you would like to search:</p>
+            <select name="calendarlist" value="choose a calendar" class="select-block span3">
+                {% for calendar in calendar_list %}
+                <option value="{{ calendar['id'] }}">{{ calendar['summary'] }}</option>
+                {% endfor %}
+            </select>
         </div>
-
         <div class="control-group">
-            <label class="control-label" for="apptStartDate">Someday between:</label>
-            <div class="controls">
-                <input id="apptStartDate" name="apptStartDate" type="date"></input>
-                and 
-                <input id="apptEndDate" name="apptEndDate" type="date"></input>
+            <p>Then, give me some criteria to search by:</p>
+            <div class="control-group">
+                <label class="control-label" for="apptStartDate">Someday Between:</label>
+                <div class="controls">
+                    <input id="apptStartDate" name="apptStartDate" type="date"></input>
+                    and 
+                    <input id="apptEndDate" name="apptEndDate" type="date"></input>
+                </div>
             </div>
-        </div>
 
-        <div class="control-group">
-            <label class="control-label" for="apptStartTime">Sometime between:</label>
-            <div class="controls">
-                <input id="apptStartTime" name="apptStartTime" type="time"></input>
-                and 
-                <input id="apptEndTime" name="apptEndTime" type="time"></input>
+            <div class="control-group">
+                <label class="control-label" for="apptStartTime">Appointment Start Time:</label>
+                <div class="controls">
+                    <input id="apptStartTime" name="apptStartTime" type="time"></input>
+                </div>
             </div>
-        </div>
 
-        <div class="control-group">
-            <label class="control-label" for="apptDuration">Appt Duration:</label>
-            <div class="controls">
-                <input id="apptDuration" name="apptDuration" type="number"></input> (hours)
+            <div class="control-group">
+                <label class="control-label" for="apptEndTime">Appointment End Time:</label>
+                <div class="controls">
+                    <input id="apptEndTime" name="apptEndTime" type="time"></input>
+                </div>
             </div>
-        </div>
 
-        <div class="control-group">
-            <div class="controls">
-                <button id="submitApptSearch" type="submit" class="btn">Find Time</button>
+            <div class="control-group">
+                <div class="controls">
+                    <button id="submitApptSearch" type="submit" class="btn">Find Time</button>
+                </div>
             </div>
         </div>
     </form>

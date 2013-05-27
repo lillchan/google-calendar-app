@@ -1,0 +1,18 @@
+<html>
+<head>
+    <title>Schedule It!</title>
+    <link rel="stylesheet" href="/static/Flat-UI/css/bootstrap.css" type="text/css">
+    <link rel="stylesheet" href="/static/Flat-UI/css/flat-ui.css" type="text/css">
+</head>
+<body>
+    <h1>Schedule It!</h1>
+    <p>Find free blocks of time on your Google Calendar</p>
+    <p>Here are some times you can schedule your appointment (choose one to schedule):<br>
+        <ul>
+            {% for date in free_dates %}
+            <li>{{ date }}</li>
+            {% endfor %}
+        </ul>
+    </p>
+</body>
+</html>

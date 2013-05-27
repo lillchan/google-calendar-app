@@ -7,6 +7,7 @@ from oauth2client.file import Storage
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.tools import run
 from flask import Flask, request, render_template
+from datetime import date, timedelta as td
 from rfc3339 import rfc3339  #small library to format dates to rfc3339 strings (format for Google Calendar API requests)
 # from flask.ext.wtf import Form, TextField, TextAreaField, SubmitField
 
@@ -92,51 +93,42 @@ def search_events():
 
     print start_rfc3339
     print end_rfc3339
+    print request.form
 
     # now = datetime.datetime.utcnow()
     # now_rfc3339 = now.isoformat("T") + "Z"
     # three_weeks = now + datetime.timedelta(weeks=3)
     # three_weeks_rfc3339 = three_weeks.isoformat("T") + "Z"
     while True:
-        events = service.events().list(calendarId=request.form[', pageToken=page_token, timeMax=end_rfc3339, timeMin=start_rfc3339).execute()
+        events = service.events().list(calendarId=request.form['calendarlist'], pageToken=page_token, timeMax=end_rfc3339, timeMin=start_rfc3339).execute()
         event_items = events.get('items')
         if not event_items:
             event_items = []  # there are no events during that time frame?
-        if event_items:
-            print event_items
-            events_freetime = []
-            for idx, e in enumerate(event_items):
-                events_freetime.append(e)
-                if e['end']['date']:
-                    events_freetime = event_items
-                    break
-                if e['end']['dateTime']:  # check for dateTime, other if it's date, then it's an all date event
-                    start = e['end']['dateTime']
-                if event_items[idx + 1] and event_items[idx + 1]['start']['dateTime']:
-                    end = event_items[idx + 1]['start']['dateTime']
-                if not event_items[idx + 1] or not event_items[idx + 1]['start']['dateTime']:
-                    endDate = start.date()
-                    endTime = datetime.datetime.strptime(request.form['12:00AM'], '%H:%M').time()
-                    end = datetime.datetime.combine(endDate, endTime)
-                    end_rfc3339 = rfc3339(end)
-                free_event = {
-                  'summary': 'freetime',
-                  'start': {
-                    'dateTime': start
-                  },
-                  'end': {
-                    'dateTime': end
-                  }
-                }
-                events_freetime.append(free_event)
-        print events_freetime
-        # if events['items']:
-        #     for event in events['items']:
-        #         print event['summary']
+        print "event items:"
+        print event_items
+        events_start_dates = []
+        tenoclock = datetime.datetime.strptime('10:00', '%H:%M').time()
+        for item in event_items:
+            if 'date' in item['start']:
+                start_date = datetime.datetime.strptime(item['start']['date'], '%Y-%m-%d')  # format of item['start']: 2009-09-10
+                item_start = datetime.datetime.combine(start_date, tenoclock)
+                events_start_dates.append(item_start)
+            elif 'dateTime' in item['start']:
+                start_date = datetime.datetime.strptime(item['start']['dateTime'][:10], '%Y-%m-%d')  # format: 2007-05-29T21:00:00-07:00, so must slice out date only (for now)
+                item_start = datetime.datetime.combine(start_date, tenoclock)
+                events_start_dates.append(item_start)
+        print "events_start_dates:"
+        print set(events_start_dates)
+        date_set = set(start + td(x) for x in range((end - start).days))
+        print "date_set:"
+        print date_set
+        free_dates = sorted(date_set - set(events_start_dates))  # all the dates that don't have an event scheduled
+        print "free_dates:"
+        print free_dates
         page_token = events.get('nextPageToken')
         if not page_token:
             break
-    return render_template("index.html", events=events_freetime)
+    return render_template("suggestions.html", free_dates=free_dates)
 
 if __name__ == "__main__":
     app.run(debug=True)
