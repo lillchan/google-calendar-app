@@ -1,18 +1,22 @@
 import gflags
 import httplib2
 import datetime
+import dateutil.parser
+import random
+import string
+import json
 
 from apiclient.discovery import build
 from oauth2client.file import Storage
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.tools import run
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, session, make_response
 from datetime import date, timedelta as td
 from rfc3339 import rfc3339  #small library to format dates to rfc3339 strings (format for Google Calendar API requests)
 # from flask.ext.wtf import Form, TextField, TextAreaField, SubmitField
 
 app = Flask(__name__)
-# app.secret_key = "development key"  # secret key for wtforms, so someone can't create and submit a malicious form to server
+app.secret_key = "development key"  # secret key for wtforms, so someone can't create and submit a malicious form to server
 FLAGS = gflags.FLAGS
 
 # Set up a Flow object to be used if we need to authenticate. This
@@ -106,23 +110,30 @@ def search_events():
             event_items = []  # there are no events during that time frame?
         print "event items:"
         print event_items
-        events_start_dates = []
-        tenoclock = datetime.datetime.strptime('10:00', '%H:%M').time()
+        events_start_end_hours = []
+        # tenoclock = datetime.datetime.strptime('10:00', '%H:%M').time()
         for item in event_items:
             if 'date' in item['start']:
                 start_date = datetime.datetime.strptime(item['start']['date'], '%Y-%m-%d')  # format of item['start']: 2009-09-10
-                item_start = datetime.datetime.combine(start_date, tenoclock)
-                events_start_dates.append(item_start)
+                end_date = datetime.datetime.strptime(item['end']['date'], '%Y-%m-%d')
+                for x in range((end_date - start_date).days * 24):
+                    events_start_end_hours.append(start_date + td(0, x * 60 * 60))
             elif 'dateTime' in item['start']:
-                start_date = datetime.datetime.strptime(item['start']['dateTime'][:10], '%Y-%m-%d')  # format: 2007-05-29T21:00:00-07:00, so must slice out date only (for now)
-                item_start = datetime.datetime.combine(start_date, tenoclock)
-                events_start_dates.append(item_start)
-        print "events_start_dates:"
-        print set(events_start_dates)
-        date_set = set(start + td(x) for x in range((end - start).days))
+                start_date = datetime.datetime.strptime(item['start']['dateTime'][:16], '%Y-%m-%dT%H:%M')  # format: 2007-05-29T21:00:00-07:00, so must slice out date and time only (no time zone info)
+                end_date = datetime.datetime.strptime(item['end']['dateTime'][:16], '%Y-%m-%dT%H:%M')
+                print start_date
+                print end_date
+                for x in range((end_date - start_date).seconds / 60 / 60):
+                    events_start_end_hours.append(start_date + td(0, x * 60 * 60))
+        print "events_start_end_hours:"
+        print set(events_start_end_hours)
+        date_set = set(start + td(0, x * 60 * 60) for x in range((end - start).days * 24))
+        # timedelta(days, seconds)
+        # multiplying days by 24 should give the number of hours between start and end, which is made into a range
+        # finally, we loop through each hour, starting with start
         print "date_set:"
         print date_set
-        free_dates = sorted(date_set - set(events_start_dates))  # all the dates that don't have an event scheduled
+        free_dates = sorted(date_set - set(events_start_end_hours))  # all the dates that don't have an event scheduled
         print "free_dates:"
         print free_dates
         page_token = events.get('nextPageToken')
