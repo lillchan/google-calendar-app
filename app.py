@@ -11,7 +11,7 @@ from oauth2client.file import Storage
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.tools import run
 from flask import Flask, request, render_template, session, make_response
-from datetime import date, timedelta as td
+from datetime import date, timedelta
 from rfc3339 import rfc3339  #small library to format dates to rfc3339 strings (format for Google Calendar API requests)
 # from flask.ext.wtf import Form, TextField, TextAreaField, SubmitField
 
@@ -81,65 +81,63 @@ def search_calender():
                 break
         return render_template("index.html", calendar_list=calendar_list_items)
 
+# pseudo code
+# input - start date, end date, start time, end time
+# initialize empty list to store potential times
+# for day in range(start date to end date):
+    # create datetime from start/end date and start/end time from user inputs
+    # google calendar api call with start date and end date created in last line (stored in var)
+    # if var from last line is empty:
+        # store start datetime in list as a suggested free slot
+    # if potential times reaches three items, break from loop
+
+
+def generate_date_list(startdate, enddate, starttime, endtime, calendarid, pagetoken):
+    apptStartDate = datetime.datetime.strptime(startdate, '%Y-%m-%d').date()
+    apptStartTime = datetime.datetime.strptime(starttime, '%H:%M').time()
+
+    apptEndDate = datetime.datetime.strptime(enddate, '%Y-%m-%d').date()
+    apptEndTime = datetime.datetime.strptime(endtime, '%H:%M').time()
+
+    td = datetime.timedelta(hours=24)
+    current_date = apptStartDate
+    free_dates = []
+
+    while current_date <= apptEndDate:
+        start_combined = datetime.datetime.combine(current_date, apptStartTime)
+        start_rfc3339 = rfc3339(start_combined)
+
+        end_combined = datetime.datetime.combine(current_date, apptEndTime)
+        end_rfc3339 = rfc3339(end_combined)
+
+        events = service.events().list(calendarId=calendarid, pageToken=pagetoken, timeMax=end_rfc3339, timeMin=start_rfc3339).execute()
+        event_items = events.get('items')
+        if not event_items:
+            free_dates.append(current_date)
+        current_date += td
+    return free_dates
+
 
 @app.route("/search_events", methods=['POST'])
 def search_events():
     page_token = None
-    apptStartDate = datetime.datetime.strptime(request.form['apptStartDate'], '%Y-%m-%d')
-    apptStartTime = datetime.datetime.strptime(request.form['apptStartTime'], '%H:%M').time()
-    start = datetime.datetime.combine(apptStartDate, apptStartTime)
-    start_rfc3339 = rfc3339(start)
-
-    apptEndDate = datetime.datetime.strptime(request.form['apptEndDate'], '%Y-%m-%d')
-    apptEndTime = datetime.datetime.strptime(request.form['apptEndTime'], '%H:%M').time()
-    end = datetime.datetime.combine(apptEndDate, apptEndTime)
-    end_rfc3339 = rfc3339(end)
-
-    print start_rfc3339
-    print end_rfc3339
-    print request.form
-
-    # now = datetime.datetime.utcnow()
-    # now_rfc3339 = now.isoformat("T") + "Z"
-    # three_weeks = now + datetime.timedelta(weeks=3)
-    # three_weeks_rfc3339 = three_weeks.isoformat("T") + "Z"
     while True:
-        events = service.events().list(calendarId=request.form['calendarlist'], pageToken=page_token, timeMax=end_rfc3339, timeMin=start_rfc3339).execute()
-        event_items = events.get('items')
-        if not event_items:
-            event_items = []  # there are no events during that time frame?
-        print "event items:"
-        print event_items
-        events_start_end_hours = []
-        # tenoclock = datetime.datetime.strptime('10:00', '%H:%M').time()
-        for item in event_items:
-            if 'date' in item['start']:
-                start_date = datetime.datetime.strptime(item['start']['date'], '%Y-%m-%d')  # format of item['start']: 2009-09-10
-                end_date = datetime.datetime.strptime(item['end']['date'], '%Y-%m-%d')
-                for x in range((end_date - start_date).days * 24):
-                    events_start_end_hours.append(start_date + td(0, x * 60 * 60))
-            elif 'dateTime' in item['start']:
-                start_date = datetime.datetime.strptime(item['start']['dateTime'][:16], '%Y-%m-%dT%H:%M')  # format: 2007-05-29T21:00:00-07:00, so must slice out date and time only (no time zone info)
-                end_date = datetime.datetime.strptime(item['end']['dateTime'][:16], '%Y-%m-%dT%H:%M')
-                print start_date
-                print end_date
-                for x in range((end_date - start_date).seconds / 60 / 60):
-                    events_start_end_hours.append(start_date + td(0, x * 60 * 60))
-        print "events_start_end_hours:"
-        print set(events_start_end_hours)
-        date_set = set(start + td(0, x * 60 * 60) for x in range((end - start).days * 24))
-        # timedelta(days, seconds)
-        # multiplying days by 24 should give the number of hours between start and end, which is made into a range
-        # finally, we loop through each hour, starting with start
-        print "date_set:"
-        print date_set
-        free_dates = sorted(date_set - set(events_start_end_hours))  # all the dates that don't have an event scheduled
-        print "free_dates:"
-        print free_dates
-        page_token = events.get('nextPageToken')
+        startdate = request.form['apptStartDate']
+        starttime = request.form['apptStartTime']
+        enddate = request.form['apptEndDate']
+        endtime = request.form['apptEndTime']
+        calendarid = request.form['calendarlist']
+
+        free_dates = generate_date_list(startdate, enddate, starttime, endtime, calendarid, page_token)
+        free_dates_string = []
+
+        for dates in free_dates:
+            free_dates_string.append(dates.strftime("%m/%d/%y"))
+
         if not page_token:
             break
-    return render_template("suggestions.html", free_dates=free_dates)
+
+    return render_template("suggestions.html", free_dates=free_dates_string)
 
 if __name__ == "__main__":
     app.run(debug=True)
