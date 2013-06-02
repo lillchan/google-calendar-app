@@ -1,18 +1,13 @@
 import gflags
 import httplib2
 import datetime
-import dateutil.parser
-import random
-import string
-import json
 
 from apiclient.discovery import build
 from oauth2client.file import Storage
 from oauth2client.client import OAuth2WebServerFlow
 from oauth2client.tools import run
-from flask import Flask, request, render_template, session, make_response
-from datetime import date, timedelta
-from rfc3339 import rfc3339  #small library to format dates to rfc3339 strings (format for Google Calendar API requests)
+from flask import Flask, request, render_template
+from rfc3339 import rfc3339  # small library to format dates to rfc3339 strings (format for Google Calendar API requests)
 # from flask.ext.wtf import Form, TextField, TextAreaField, SubmitField
 
 app = Flask(__name__)
@@ -137,7 +132,33 @@ def search_events():
         if not page_token:
             break
 
-    return render_template("suggestions.html", free_dates=free_dates_string)
+    return render_template("suggestions.html", free_dates=free_dates_string, starttime=starttime, endtime=endtime)
+
+
+@app.route("/schedule_event")
+def schedule_event():
+    event = {
+      'summary': 'Appointment',
+      'location': 'Somewhere',
+      'start': {
+        'dateTime': '2011-06-03T10:00:00.000-07:00'
+      },
+      'end': {
+        'dateTime': '2011-06-03T10:25:00.000-07:00'
+      },
+      'attendees': [
+        {
+          'email': 'attendeeEmail',
+          # Other attendee's data...
+        },
+        # ...
+      ],
+    }
+
+    created_event = service.events().insert(calendarId='primary', body=event).execute()
+
+    print created_event['id']
+
 
 if __name__ == "__main__":
     app.run(debug=True)

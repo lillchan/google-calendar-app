@@ -10,7 +10,7 @@
     <p>Here are some times you can schedule your appointment (choose one to schedule):<br>
         <ul>
             {% for date in free_dates %}
-            <li>{{ date }}</li>
+            <a href="#"><li>{{ date }} from {{ starttime }} to {{ endtime }}</li></a>
             {% endfor %}
         </ul>
     </p>
