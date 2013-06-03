@@ -7,7 +7,7 @@
             </label>
             <select name="apptOptions" value="Choose a Time" class="select-block span4">
                 {% for date in free_dates %}
-                <option value="{{ date }}, {{ starttime }}, {{ endtime }}">{{ date }} from {{ starttime }} to {{ endtime }}</option>
+                <option value="{{ date }} {{ starttime }} {{ endtime }}">{{ date }} from {{ starttime }} to {{ endtime }}</option>
                 {% endfor %}
             </select>
             

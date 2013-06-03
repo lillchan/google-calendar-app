@@ -137,21 +137,33 @@ def search_events():
 
 @app.route("/schedule_event", methods=['POST'])
 def schedule_event():
+    # grab user inputs from the schedule_event form
     apptName = request.form['apptName']
     apptLocation = request.form['apptLocation']
-    apptTime = request.form['apptOptions']
-    print apptName
-    print apptLocation
-    print apptTime  # format: { 'date': '05/05/13', 'start': '12:00', 'end': '13:00' }
-    return "done!"
+    # from apptOptions, grab the start/end date and time user has chosen
+    # apptOptions returns in format: 05/05/13, 12:00, 13:00
+    # first, turn it into a list
+    apptTime = request.form['apptOptions'].split()
+    apptDate = apptTime[0]
+    apptStartTime = apptTime[1]
+    apptEndTime = apptTime[2]
+    # convert datetime into rfc3339 format for Google API
+    apptDate = datetime.datetime.strptime(apptDate, '%m/%d/%y').date()
+    apptStartTime = datetime.datetime.strptime(apptStartTime, '%H:%M').time()
+    apptEndTime = datetime.datetime.strptime(apptEndTime, '%H:%M').time()
+    start_combined = datetime.datetime.combine(apptDate, apptStartTime)
+    start_rfc3339 = rfc3339(start_combined)
+    end_combined = datetime.datetime.combine(apptDate, apptEndTime)
+    end_rfc3339 = rfc3339(end_combined)
+
     event = {
       'summary': apptName,
       'location': apptLocation,
       'start': {
-        'dateTime': '2011-06-03T10:00:00.000-07:00'
+        'dateTime': start_rfc3339
       },
       'end': {
-        'dateTime': '2011-06-03T10:25:00.000-07:00'
+        'dateTime': end_rfc3339
       },
       'attendees': [
         {
@@ -161,6 +173,10 @@ def schedule_event():
         # ...
       ],
     }
+
+    print event
+
+    return "done!"
 
     # created_event = service.events().insert(calendarId='primary', body=event).execute()
 
