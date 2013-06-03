@@ -87,22 +87,28 @@ def search_calender():
     # if potential times reaches three items, break from loop
 
 
-def generate_date_list(startdate, enddate, starttime, endtime, calendarid, pagetoken):
-    apptStartDate = datetime.datetime.strptime(startdate, '%Y-%m-%d').date()
-    apptStartTime = datetime.datetime.strptime(starttime, '%H:%M').time()
+# function to turn date and time strings into date/time objects
+# returns list with date and time objects
+def strp_date_time(date, time):
+    apptDate = datetime.datetime.strptime(date, '%Y-%m-%d').date()
+    apptTime = datetime.datetime.strptime(time, '%H:%M').time()
+    return [apptDate, apptTime]
 
-    apptEndDate = datetime.datetime.strptime(enddate, '%Y-%m-%d').date()
-    apptEndTime = datetime.datetime.strptime(endtime, '%H:%M').time()
+
+def generate_date_list(startdate, enddate, starttime, endtime, calendarid, pagetoken):
+    # strp_date_time returns list: [date object, time object]
+    apptStartDateTime = strp_date_time(startdate, starttime)
+    apptEndDateTime = strp_date_time(enddate, endtime)
 
     td = datetime.timedelta(hours=24)
-    current_date = apptStartDate
+    current_date = apptStartDateTime[0]
     free_dates = []
 
-    while current_date <= apptEndDate:
-        start_combined = datetime.datetime.combine(current_date, apptStartTime)
+    while current_date <= apptEndDateTime[0]:
+        start_combined = datetime.datetime.combine(current_date, apptStartDateTime[1])
         start_rfc3339 = rfc3339(start_combined)
 
-        end_combined = datetime.datetime.combine(current_date, apptEndTime)
+        end_combined = datetime.datetime.combine(current_date, apptEndDateTime[1])
         end_rfc3339 = rfc3339(end_combined)
 
         events = service.events().list(calendarId=calendarid, pageToken=pagetoken, timeMax=end_rfc3339, timeMin=start_rfc3339).execute()
@@ -165,13 +171,13 @@ def schedule_event():
       'end': {
         'dateTime': end_rfc3339
       },
-      'attendees': [
-        {
-          'email': 'attendeeEmail',
-          # Other attendee's data...
-        },
-        # ...
-      ],
+      # 'attendees': [
+      #   {
+      #     'email': 'attendeeEmail',
+      #     # Other attendee's data...
+      #   },
+      #   # ...
+      # ],
     }
 
     print event
