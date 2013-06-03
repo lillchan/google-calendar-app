@@ -95,24 +95,38 @@ def strp_date_time(date, time):
     return [apptDate, apptTime]
 
 
+# function to turn date and time into rfc3339 format for Google Calendar API call
+# returns string of datetime in rfc339 format
+def datetime_combine_rfc3339(date, time):
+    combined = datetime.datetime.combine(date, time)
+    rfc3339_datetime = rfc3339(combined)
+    return rfc3339_datetime
+
+
+# function to generate list of suggested free dates for user to choose from
 def generate_date_list(startdate, enddate, starttime, endtime, calendarid, pagetoken):
     # strp_date_time returns list: [date object, time object]
     apptStartDateTime = strp_date_time(startdate, starttime)
     apptEndDateTime = strp_date_time(enddate, endtime)
-
+    # td used to increment while loop one day at a time (24 hours)
     td = datetime.timedelta(hours=24)
+    # store user's requested start time for use in while loop
     current_date = apptStartDateTime[0]
+    # empty list to store suggested free dates
     free_dates = []
-
+    # loop from user's requested start date to end date
     while current_date <= apptEndDateTime[0]:
-        start_combined = datetime.datetime.combine(current_date, apptStartDateTime[1])
-        start_rfc3339 = rfc3339(start_combined)
-
-        end_combined = datetime.datetime.combine(current_date, apptEndDateTime[1])
-        end_rfc3339 = rfc3339(end_combined)
-
+        # format start and end times for Google Calendar API call
+        start_rfc3339 = datetime_combine_rfc3339(current_date, apptStartDateTime[1])
+        end_rfc3339 = datetime_combine_rfc3339(current_date, apptEndDateTime[1])
+        # Google Calendar API call
+        # returns a dictionary of calendar properties
+        # one of the properties is a list of events that match the datetime criteria given
         events = service.events().list(calendarId=calendarid, pageToken=pagetoken, timeMax=end_rfc3339, timeMin=start_rfc3339).execute()
+        # grab the list of events
         event_items = events.get('items')
+        # if there are no events given back, then that time is empty
+        # add date to the suggested free time list
         if not event_items:
             free_dates.append(current_date)
         current_date += td
