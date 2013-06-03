@@ -95,7 +95,7 @@ def strp_date_time(date, time):
     return [apptDate, apptTime]
 
 
-# function to turn date and time into rfc3339 format for Google Calendar API call
+# function to turn strings of date and time into rfc3339 format for Google Calendar API call
 # returns string of datetime in rfc339 format
 def datetime_combine_rfc3339(date, time):
     combined = datetime.datetime.combine(date, time)
@@ -146,8 +146,10 @@ def search_events():
         free_dates = generate_date_list(startdate, enddate, starttime, endtime, calendarid, page_token)
         free_dates_string = []
 
+        # TODO: add check to see if free_dates is empty (no free blocks in specified time period)
+
         for dates in free_dates:
-            free_dates_string.append(dates.strftime("%m/%d/%y"))
+            free_dates_string.append(dates.strftime("%Y-%m-%d"))
 
         if not page_token:
             break
@@ -168,13 +170,11 @@ def schedule_event():
     apptStartTime = apptTime[1]
     apptEndTime = apptTime[2]
     # convert datetime into rfc3339 format for Google API
-    apptDate = datetime.datetime.strptime(apptDate, '%m/%d/%y').date()
-    apptStartTime = datetime.datetime.strptime(apptStartTime, '%H:%M').time()
-    apptEndTime = datetime.datetime.strptime(apptEndTime, '%H:%M').time()
-    start_combined = datetime.datetime.combine(apptDate, apptStartTime)
-    start_rfc3339 = rfc3339(start_combined)
-    end_combined = datetime.datetime.combine(apptDate, apptEndTime)
-    end_rfc3339 = rfc3339(end_combined)
+    apptStartDateTime = strp_date_time(apptDate, apptStartTime)
+    apptEndDateTime = strp_date_time(apptDate, apptEndTime)
+    # format start and end times for Google Calendar API call
+    start_rfc3339 = datetime_combine_rfc3339(apptStartDateTime[0], apptStartDateTime[1])
+    end_rfc3339 = datetime_combine_rfc3339(apptEndDateTime[0], apptEndDateTime[1])
 
     event = {
       'summary': apptName,
