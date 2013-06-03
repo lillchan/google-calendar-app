@@ -1,52 +1,27 @@
-<html>
-<head>
-    <title>Schedule It!</title>
-    <link rel="stylesheet" href="/static/Flat-UI/css/bootstrap.css" type="text/css">
-    <link rel="stylesheet" href="/static/Flat-UI/css/flat-ui.css" type="text/css">
-</head>
-<body>
-    <h1>Schedule It!</h1>
-    <p>Find free blocks of time on your Google Calendar</p>
-    <form action="/search_events" method="POST" class="form-horizontal" id="searchApptsForm">
-        <div class="control-group">
-            <p>First, please select the calendar you would like to search:</p>
-            <select name="calendarlist" value="choose a calendar" class="select-block span3">
+{% extends "layout.html" %}
+{% block content %}
+    <form action="/search_events" method="POST" id="searchApptsForm">
+        <fieldset>
+            <label><strong>First, please select the calendar you would like to search:</strong></label>
+            <select name="calendarlist" value="choose a calendar" class="select-block span4">
                 {% for calendar in calendar_list %}
                 <option value="{{ calendar['id'] }}">{{ calendar['summary'] }}</option>
                 {% endfor %}
             </select>
-        </div>
-        <div class="control-group">
-            <p>Then, give me some criteria to search by:</p>
-            <div class="control-group">
-                <label class="control-label" for="apptStartDate">Someday Between:</label>
-                <div class="controls">
-                    <input id="apptStartDate" name="apptStartDate" type="date"></input>
-                    and 
-                    <input id="apptEndDate" name="apptEndDate" type="date"></input>
-                </div>
-            </div>
 
-            <div class="control-group">
-                <label class="control-label" for="apptStartTime">Appointment Start Time:</label>
-                <div class="controls">
-                    <input id="apptStartTime" name="apptStartTime" type="time"></input>
-                </div>
-            </div>
+            <label><strong>Then, give me some criteria to search by:</strong></label>
+            <label>Someday Between:</label>
+            <input id="apptStartDate" name="apptStartDate" type="date"></input>
+            and 
+            <input id="apptEndDate" name="apptEndDate" type="date"></input>
 
-            <div class="control-group">
-                <label class="control-label" for="apptEndTime">Appointment End Time:</label>
-                <div class="controls">
-                    <input id="apptEndTime" name="apptEndTime" type="time"></input>
-                </div>
-            </div>
+            <label>Appointment Start Time:</label>
+            <input id="apptStartTime" name="apptStartTime" type="time"></input>
 
-            <div class="control-group">
-                <div class="controls">
-                    <button id="submitApptSearch" type="submit" class="btn">Find Time</button>
-                </div>
-            </div>
-        </div>
+            <label>Appointment End Time:</label>
+            <input id="apptEndTime" name="apptEndTime" type="time"></input>
+            <br>
+            <button id="submitApptSearch" type="submit" class="btn">Find Time</button>
+        </fieldset>
     </form>
-</body>
-</html>
+{% endblock %}

@@ -1,18 +1,23 @@
-<html>
-<head>
-    <title>Schedule It!</title>
-    <link rel="stylesheet" href="/static/Flat-UI/css/bootstrap.css" type="text/css">
-    <link rel="stylesheet" href="/static/Flat-UI/css/flat-ui.css" type="text/css">
-</head>
-<body>
-    <h1>Schedule It!</h1>
-    <p>Find free blocks of time on your Google Calendar</p>
-    <p>Here are some times you can schedule your appointment (choose one to schedule):<br>
-        <ul>
-            {% for date in free_dates %}
-            <a href="#"><li>{{ date }} from {{ starttime }} to {{ endtime }}</li></a>
-            {% endfor %}
-        </ul>
-    </p>
-</body>
-</html>
+{% extends "layout.html" %}
+{% block content %}
+    <form action="/schedule_event" method="POST" id="scheduleEventForm">
+        <fieldset>
+            <label>
+                <strong>Here are some times you can schedule your appointment (choose one to schedule):</strong>
+            </label>
+            <select name="apptOptions" value="Choose a Time" class="select-block span4">
+                {% for date in free_dates %}
+                <option value="{{ date }}, {{ starttime }}, {{ endtime }}">{{ date }} from {{ starttime }} to {{ endtime }}</option>
+                {% endfor %}
+            </select>
+            
+            <label>Appointment Name:</label>
+            <input id="apptName" name="apptName" type="text"></input>
+
+            <label>Appointment Location:</label>
+            <input id="apptLocation" name="apptLocation" type="text"></input>
+            <br>
+            <button id="submitNewAppt" type="submit" class="btn">Schedule Appointment!</button>
+        </fieldset>
+    </form>
+{% endblock %}

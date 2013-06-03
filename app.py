@@ -135,11 +135,18 @@ def search_events():
     return render_template("suggestions.html", free_dates=free_dates_string, starttime=starttime, endtime=endtime)
 
 
-@app.route("/schedule_event")
+@app.route("/schedule_event", methods=['POST'])
 def schedule_event():
+    apptName = request.form['apptName']
+    apptLocation = request.form['apptLocation']
+    apptTime = request.form['apptOptions']
+    print apptName
+    print apptLocation
+    print apptTime  # format: { 'date': '05/05/13', 'start': '12:00', 'end': '13:00' }
+    return "done!"
     event = {
-      'summary': 'Appointment',
-      'location': 'Somewhere',
+      'summary': apptName,
+      'location': apptLocation,
       'start': {
         'dateTime': '2011-06-03T10:00:00.000-07:00'
       },
@@ -155,9 +162,9 @@ def schedule_event():
       ],
     }
 
-    created_event = service.events().insert(calendarId='primary', body=event).execute()
+    # created_event = service.events().insert(calendarId='primary', body=event).execute()
 
-    print created_event['id']
+    # print created_event['id']
 
 
 if __name__ == "__main__":
