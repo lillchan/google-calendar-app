@@ -154,7 +154,7 @@ def search_events():
         if not page_token:
             break
 
-    return render_template("suggestions.html", free_dates=free_dates_string, starttime=starttime, endtime=endtime)
+    return render_template("suggestions.html", free_dates=free_dates_string, starttime=starttime, endtime=endtime, calendarid=calendarid)
 
 
 @app.route("/schedule_event", methods=['POST'])
@@ -162,6 +162,7 @@ def schedule_event():
     # grab user inputs from the schedule_event form
     apptName = request.form['apptName']
     apptLocation = request.form['apptLocation']
+    apptCalendarId = request.form['apptCalendarId']
     # from apptOptions, grab the start/end date and time user has chosen
     # apptOptions returns in format: 05/05/13, 12:00, 13:00
     # first, turn it into a list
@@ -194,13 +195,11 @@ def schedule_event():
       # ],
     }
 
-    print event
+    created_event = service.events().insert(calendarId=apptCalendarId, body=event).execute()
 
-    return "done!"
+    print created_event['id']
 
-    # created_event = service.events().insert(calendarId='primary', body=event).execute()
-
-    # print created_event['id']
+    return "Your appointment has been scheduled!"
 
 
 if __name__ == "__main__":
