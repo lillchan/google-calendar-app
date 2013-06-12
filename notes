@@ -1,6 +1,0 @@
-things to check out in HB app:
-.env - local environment variables (including secret key, client id and db)
-git ignore to see what files I shouldn't be pushing
-model.py - use base, then build classes off the base
-main.py - import sql alchemy and declare routes
-config.py - reads from .env file through foreman OR heroku's environment variables
