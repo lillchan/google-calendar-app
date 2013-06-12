@@ -1,11 +1,11 @@
 import gflags
 import datetime
 import json
+import urllib
+import urllib2
 # import config
 
-from oauth2client.client import OAuth2WebServerFlow
-from oauth2client.tools import run
-from flask import Flask, request, render_template, session, url_for, redirect, escape
+from flask import Flask, request, render_template, session, url_for, redirect
 from rfc3339 import rfc3339  # small library to format dates to rfc3339 strings (format for Google Calendar API requests)
 from flask_oauth import OAuth
 
@@ -36,19 +36,23 @@ google = oauth.remote_app('google',
 
 
 @app.route("/")
+def welcome():
+    return render_template('index.html')
+
+
+@app.route("/search")
 def index():
     access_token = session.get('access_token')
     if access_token is None:
         return redirect(url_for('login'))
 
     access_token = access_token[0]
-    from urllib2 import Request, urlopen, URLError
 
     headers = {'Authorization': 'OAuth ' + access_token}
-    req = Request('https://www.googleapis.com/calendar/v3/users/me/calendarList', None, headers)
+    req = urllib2.Request('https://www.googleapis.com/calendar/v3/users/me/calendarList', None, headers)
     try:
-        res = urlopen(req)
-    except (URLError,), e:
+        res = urllib2.urlopen(req)
+    except (urllib2.URLError,), e:
         if e.code == 401 or e.code == 403:
             # Unauthorized - bad token
             session.pop('access_token', None)
@@ -56,48 +60,34 @@ def index():
         return str(e.code)
     response = res.read()
     calendar_list = json.loads(response)['items']
-    return render_template('index.html', calendar_list=calendar_list)
+    return render_template('search.html', calendar_list=calendar_list)
 
 
 @app.route("/login")
 def login():
     callback = url_for('authorized', _external=True)
     return google.authorize(callback=callback)
-    # print escape(session['token'])
-    # return render_template('index.html')
-    # page_token = None
-    # if request.method == 'POST':
-    #     return redirect(url_for('index'))
-    # if request.method == 'GET':
-    #     return google_oauth()
-        # while True:
-        #     service = google_oauth()
-        #     calendar_list = service.calendarList().list(pageToken=page_token).execute()
-        #     calendar_list_items = calendar_list['items']
-        #     page_token = calendar_list.get('nextPageToken')
-        #     if not page_token:
-        #         break
-        # return render_template("index.html", calendar_list=calendar_list_items)
 
 
-# @app.route(REDIRECT_URI)
-# @google.authorized_handler
-# def authorized(resp):
-#     access_token = resp['access_token']
-#     session['access_token'] = access_token, ''
-#     return redirect(url_for('index'))
+@app.route(REDIRECT_URI)
+@google.authorized_handler
+def authorized(resp):
+    # TODO: add error handling if resp is empty (user doesn't authorize app)
+    access_token = resp['access_token']
+    session['access_token'] = access_token, ''
+    return redirect(url_for('index'))
 
 
-# @google.tokengetter
-# def get_access_token():
-#     return session.get('access_token')
+@google.tokengetter
+def get_access_token():
+    return session.get('access_token')
 
 
 @app.route("/logout")
 def logout():
     # remove the username from the session if it's there
-    session.pop('username', None)
-    return redirect(url_for('index'))
+    session.pop('access_token', None)
+    return redirect(url_for('welcome'))
 
 
 # function to turn date and time strings into date/time objects
@@ -117,7 +107,7 @@ def datetime_combine_rfc3339(date, time):
 
 
 # function to generate list of suggested free dates for user to choose from
-def generate_date_list(startdate, enddate, starttime, endtime, calendarid, pagetoken):
+def generate_date_list(startdate, enddate, starttime, endtime, calendarid):
     # strp_date_time returns list: [date object, time object]
     apptStartDateTime = strp_date_time(startdate, starttime)
     apptEndDateTime = strp_date_time(enddate, endtime)
@@ -127,21 +117,43 @@ def generate_date_list(startdate, enddate, starttime, endtime, calendarid, paget
     current_date = apptStartDateTime[0]
     # empty list to store suggested free dates
     free_dates = []
+    access_token = session.get('access_token')
+    print access_token
+    access_token = access_token[0]
+    print access_token
+    headers = {'Authorization': 'OAuth ' + access_token}
     # loop from user's requested start date to end date
     while current_date <= apptEndDateTime[0]:
         # format start and end times for Google Calendar API call
         start_rfc3339 = datetime_combine_rfc3339(current_date, apptStartDateTime[1])
         end_rfc3339 = datetime_combine_rfc3339(current_date, apptEndDateTime[1])
-        # Google Calendar API call
-        # returns a dictionary of calendar properties
-        # one of the properties is a list of events that match the datetime criteria given
-        service = google_oauth()
-        events = service.events().list(calendarId=calendarid, pageToken=pagetoken, timeMax=end_rfc3339, timeMin=start_rfc3339).execute()
-        # grab the list of events
-        event_items = events.get('items')
+        data = {}
+        data['key'] = 'AIzaSyD2rYjoab1qlDJNifetNZun-qaLFvNvcJ4'
+        data['timeMin'] = start_rfc3339
+        data['timeMax'] = end_rfc3339
+        url_values = urllib.urlencode(data)
+        print url_values
+        url = 'https://www.googleapis.com/calendar/v3/calendars/'
+        full_url = url + calendarid + '/events?' + url_values
+        print full_url
+        req = urllib2.Request(full_url, None, headers)
+        print req
+        try:
+            res = urllib2.urlopen(req)
+            print res
+        except (urllib2.URLError,), e:
+            if e.code == 401 or e.code == 403:
+                # Unauthorized - bad token
+                session.pop('access_token', None)
+                return redirect(url_for('login'))
+            return str(e.code)
+        response = res.read()
+        print response
+        event_list = json.loads(response)['items']
+        print event_list
         # if there are no events given back, then that time is empty
         # add date to the suggested free time list
-        if not event_items:
+        if not event_list:
             free_dates.append(current_date)
         current_date += td
     return free_dates
@@ -149,24 +161,20 @@ def generate_date_list(startdate, enddate, starttime, endtime, calendarid, paget
 
 @app.route("/search_events", methods=['POST'])
 def search_events():
-    page_token = None
-    while True:
-        startdate = request.form['apptStartDate']
-        starttime = request.form['apptStartTime']
-        enddate = request.form['apptEndDate']
-        endtime = request.form['apptEndTime']
-        calendarid = request.form['calendarlist']
+    startdate = request.form['apptStartDate']
+    starttime = request.form['apptStartTime']
+    enddate = request.form['apptEndDate']
+    endtime = request.form['apptEndTime']
+    calendarid = request.form['calendarlist']
 
-        free_dates = generate_date_list(startdate, enddate, starttime, endtime, calendarid, page_token)
-        free_dates_string = []
+    free_dates = generate_date_list(startdate, enddate, starttime, endtime, calendarid)
+    print free_dates
+    free_dates_string = []
 
-        # TODO: add check to see if free_dates is empty (no free blocks in specified time period)
+    # TODO: add check to see if free_dates is empty (no free blocks in specified time period)
 
-        for dates in free_dates:
-            free_dates_string.append(dates.strftime("%Y-%m-%d"))
-
-        if not page_token:
-            break
+    for dates in free_dates:
+        free_dates_string.append(dates.strftime("%Y-%m-%d"))
 
     return render_template("suggestions.html", free_dates=free_dates_string, starttime=starttime, endtime=endtime, calendarid=calendarid)
 

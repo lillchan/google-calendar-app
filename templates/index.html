@@ -1,28 +1,5 @@
 {% extends "layout.html" %}
 {% block content %}
-    {{ response }}
-    <form action="/search_events" method="POST" id="searchApptsForm">
-        <fieldset>
-            <label><strong>First, please select the calendar you would like to search:</strong></label>
-            <select name="calendarlist" value="choose a calendar" class="select-block span4">
-                {% for calendar in calendar_list %}
-                <option value="{{ calendar['id'] }}">{{ calendar['summary'] }}</option>
-                {% endfor %}
-            </select>
-
-            <label><strong>Then, give me some criteria to search by:</strong></label>
-            <label>Someday Between:</label>
-            <input id="apptStartDate" name="apptStartDate" type="date"></input>
-            and 
-            <input id="apptEndDate" name="apptEndDate" type="date"></input>
-
-            <label>Appointment Start Time:</label>
-            <input id="apptStartTime" name="apptStartTime" type="time"></input>
-
-            <label>Appointment End Time:</label>
-            <input id="apptEndTime" name="apptEndTime" type="time"></input>
-            <br>
-            <button id="submitApptSearch" type="submit" class="btn">Find Time</button>
-        </fieldset>
-    </form>
+    <p>Welcome! To get started, please sign with in to your Google Calendar.</p>
+    <form action="/search"><input type="submit" value="Sign In!"></form>
 {% endblock %}
