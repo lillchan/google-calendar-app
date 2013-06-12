@@ -157,7 +157,7 @@ def generate_date_list(startdate, enddate, starttime, endtime, calendarid):
         start_rfc3339 = datetime_combine_rfc3339(current_date, apptStartDateTime[1])
         end_rfc3339 = datetime_combine_rfc3339(current_date, apptEndDateTime[1])
         data = {}
-        data['key'] = 'AIzaSyD2rYjoab1qlDJNifetNZun-qaLFvNvcJ4'
+        data['key'] = config.GOOGLE_API_KEY
         data['timeMin'] = start_rfc3339
         data['timeMax'] = end_rfc3339
         url_values = urllib.urlencode(data)
