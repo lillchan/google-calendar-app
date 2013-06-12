@@ -3,6 +3,7 @@ import datetime
 import json
 import urllib
 import urllib2
+import requests
 # import config
 
 from flask import Flask, request, render_template, session, url_for, redirect
@@ -39,9 +40,37 @@ google = oauth.remote_app('google',
 def welcome():
     return render_template('index.html')
 
+# trying to clean up code, but it doesn't work - not sure why?
+# def google_calendar_request(url, data):
+#     access_token = session.get('access_token')
+#     print access_token
+#     if access_token is None:
+#         return redirect(url_for('login'))
+
+#     access_token = access_token[0]
+
+#     headers = {'Authorization': 'OAuth ' + access_token}
+#     req = urllib2.Request(url, data, headers)
+#     print req
+#     try:
+#         res = urllib2.urlopen(req)
+#         print res
+#     except (urllib2.URLError,), e:
+#         if e.code == 401 or e.code == 403:
+#             # Unauthorized - bad token
+#             session.pop('access_token', None)
+#             return redirect(url_for('login'))
+#         return str(e.code)
+#     response = res.read()
+#     return response
+
 
 @app.route("/search")
-def index():
+def search():
+    # url = 'https://www.googleapis.com/calendar/v3/users/me/calendarList'
+    # data = None
+    # response = json.dumps(google_calendar_request(url, data))
+    # print response
     access_token = session.get('access_token')
     if access_token is None:
         return redirect(url_for('login'))
@@ -75,7 +104,7 @@ def authorized(resp):
     # TODO: add error handling if resp is empty (user doesn't authorize app)
     access_token = resp['access_token']
     session['access_token'] = access_token, ''
-    return redirect(url_for('index'))
+    return redirect(url_for('search'))
 
 
 @google.tokengetter
@@ -198,26 +227,35 @@ def schedule_event():
     # format start and end times for Google Calendar API call
     start_rfc3339 = datetime_combine_rfc3339(apptStartDateTime[0], apptStartDateTime[1])
     end_rfc3339 = datetime_combine_rfc3339(apptEndDateTime[0], apptEndDateTime[1])
-    event = {
-      'summary': apptName,
-      'location': apptLocation,
-      'start': {
-        'dateTime': start_rfc3339
-      },
-      'end': {
-        'dateTime': end_rfc3339
-      },
-      # 'attendees': [
-      #   {
-      #     'email': 'attendeeEmail',
-      #     # Other attendee's data...
-      #   },
-      #   # ...
-      # ],
-    }
-    service = google_oauth
-    created_event = service.events().insert(calendarId=apptCalendarId, body=event).execute()
-    print created_event['id']
+    event = {}
+    event['summary'] = apptName
+    event['location'] = apptLocation
+    event['start'] = {'dateTime': start_rfc3339}
+    event['end'] = {'dateTime': end_rfc3339}
+    print event
+    # data = urllib.urlencode(event)
+    access_token = session.get('access_token')
+    access_token = access_token[0]
+    url = 'https://www.googleapis.com/calendar/v3/calendars/'
+    full_url = url + apptCalendarId + '/events?'
+    print full_url
+    headers = {'Content-Type': 'application/json; charset=UTF-8', 'Authorization': 'OAuth ' + access_token}
+    r = requests.post(full_url, data=json.dumps(event), headers=headers)
+    # req = urllib2.Request(full_url, data, headers)
+    # print req
+    # try:
+        # res = urllib2.urlopen(req)
+        # print res
+    # except (urllib2.URLError,), e:
+        # if e.code == 401 or e.code == 403:
+            # Unauthorized - bad token
+            # session.pop('access_token', None)
+            # return redirect(url_for('login'))
+        # return str(e.code)
+    response = r.text
+    # service = google_oauth
+    # created_event = service.events().insert(calendarId=apptCalendarId, body=event).execute()
+    print response
     return "Your appointment has been scheduled!"
 
 
