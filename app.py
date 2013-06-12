@@ -4,24 +4,23 @@ import json
 import urllib
 import urllib2
 import requests
-# import config
+import config
 
 from flask import Flask, request, render_template, session, url_for, redirect
 from rfc3339 import rfc3339  # small library to format dates to rfc3339 strings (format for Google Calendar API requests)
 from flask_oauth import OAuth
-
-GOOGLE_CLIENT_ID = '524876334284.apps.googleusercontent.com'
-GOOGLE_CLIENT_SECRET = '_yi1QfD2NJrKAX5u4cceFKj5'
-REDIRECT_URI = '/authorized'
-SECRET_KEY = 'development key'
-DEBUG = True
+# from flask.ext.sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.debug = DEBUG
-app.secret_key = SECRET_KEY
-# app.config.from_object(config)
+app.debug = config.DEBUG
+app.secret_key = config.SECRET_KEY
+app.config.from_object(config)
 FLAGS = gflags.FLAGS
 oauth = OAuth()
+
+# db = SQLAlchemy(app)
+
+# from app import models
 
 google = oauth.remote_app('google',
     base_url='https://www.google.com/accounts/',
@@ -32,8 +31,8 @@ google = oauth.remote_app('google',
     access_token_url='https://accounts.google.com/o/oauth2/token',
     access_token_method='POST',
     access_token_params={'grant_type': 'authorization_code'},
-    consumer_key=GOOGLE_CLIENT_ID,
-    consumer_secret=GOOGLE_CLIENT_SECRET)
+    consumer_key=config.GOOGLE_CLIENT_ID,
+    consumer_secret=config.GOOGLE_CLIENT_SECRET)
 
 
 @app.route("/")
@@ -88,6 +87,7 @@ def search():
             return redirect(url_for('login'))
         return str(e.code)
     response = res.read()
+    print response
     calendar_list = json.loads(response)['items']
     return render_template('search.html', calendar_list=calendar_list)
 
@@ -98,7 +98,7 @@ def login():
     return google.authorize(callback=callback)
 
 
-@app.route(REDIRECT_URI)
+@app.route(config.REDIRECT_URI)
 @google.authorized_handler
 def authorized(resp):
     # TODO: add error handling if resp is empty (user doesn't authorize app)
@@ -233,7 +233,6 @@ def schedule_event():
     event['start'] = {'dateTime': start_rfc3339}
     event['end'] = {'dateTime': end_rfc3339}
     print event
-    # data = urllib.urlencode(event)
     access_token = session.get('access_token')
     access_token = access_token[0]
     url = 'https://www.googleapis.com/calendar/v3/calendars/'
@@ -241,20 +240,7 @@ def schedule_event():
     print full_url
     headers = {'Content-Type': 'application/json; charset=UTF-8', 'Authorization': 'OAuth ' + access_token}
     r = requests.post(full_url, data=json.dumps(event), headers=headers)
-    # req = urllib2.Request(full_url, data, headers)
-    # print req
-    # try:
-        # res = urllib2.urlopen(req)
-        # print res
-    # except (urllib2.URLError,), e:
-        # if e.code == 401 or e.code == 403:
-            # Unauthorized - bad token
-            # session.pop('access_token', None)
-            # return redirect(url_for('login'))
-        # return str(e.code)
     response = r.text
-    # service = google_oauth
-    # created_event = service.events().insert(calendarId=apptCalendarId, body=event).execute()
     print response
     return "Your appointment has been scheduled!"
 
