@@ -269,12 +269,12 @@ def schedule_event():
     apptStartTime = apptTime[1]
     apptEndTime = apptTime[2]
     # convert datetime into rfc3339 format for Google API
-    apptDate = datetime.datetime.strptime(apptDate, '%m/%d/%Y').date()
-    apptStartTime = datetime.datetime.strptime(apptStartTime, '%I:%M%p').time()
-    apptEndTime = datetime.datetime.strptime(apptEndTime, '%I:%M%p').time()
+    apptDateObject = datetime.datetime.strptime(apptDate, '%m/%d/%Y').date()
+    apptStartTimeObject = datetime.datetime.strptime(apptStartTime, '%I:%M%p').time()
+    apptEndTimeObject = datetime.datetime.strptime(apptEndTime, '%I:%M%p').time()
     # format start and end times for Google Calendar API call
-    start_rfc3339 = datetime_combine_rfc3339(apptDate, apptStartTime)
-    end_rfc3339 = datetime_combine_rfc3339(apptDate, apptEndTime)
+    start_rfc3339 = datetime_combine_rfc3339(apptDateObject, apptStartTimeObject)
+    end_rfc3339 = datetime_combine_rfc3339(apptDateObject, apptEndTimeObject)
     # put all the data needed with the post request into a dictionary
     event = {}
     event['summary'] = apptName
