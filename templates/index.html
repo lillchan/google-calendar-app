@@ -1,5 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
-    <p>Welcome! To get started, please sign with in to your Google Calendar.</p>
-    <form action="/search"><input type="submit" value="Sign In!"></form>
+    <div class="jumbotron">
+        <p class="lead">Welcome! To get started, please sign with in to your Google Calendar.</p>
+        <form action="/search"><input class="btn btn-large btn-primary" type="submit" value="Sign In"></form>
+    </div>
 {% endblock %}

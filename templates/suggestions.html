@@ -1,12 +1,15 @@
 {% extends "layout.html" %}
 {% block content %}
-    <p> Calendar: {{ calendarid }}</p>
+    {% if not free_dates %}
+    <p>Sorry, we couldn't find an open block at the time requested! :(</p>
+    <input type="button" onclick="history.back();" value="Try Again">
+    {% else %}
     <form action="/schedule_event" method="POST" id="scheduleEventForm">
         <fieldset>
             <input id="apptCalendarId" name="apptCalendarId" type="hidden" value="{{ calendarid }}"></input>
 
-            <label>Some available times (choose one to schedule):</label>
-            <select name="apptOptions" class="select-block span4">
+            <label><b>Some available times on the calendar {{ calendarid }} (choose one to schedule):</b></label>
+            <select name="apptOptions" class="select-block span5">
                 {% for date in free_dates %}
                 <option value="{{ date }} {{ starttime }} {{ endtime }}">{{ date }} from {{ starttime }} to {{ endtime }}</option>
                 {% endfor %}
@@ -18,7 +21,12 @@
             <label>Appointment Location:</label>
             <input id="apptLocation" name="apptLocation" type="text"></input>
             <br>
-            <button id="submitNewAppt" type="submit" class="btn">Schedule Appointment!</button>
+            <button id="submitNewAppt" type="submit" class="btn btn-large btn-primary">Schedule Appointment!</button>
         </fieldset>
     </form>
+    <p align="right">
+        I'm done!
+        <form align="right" action="/logout"><input class="btn" type="submit" value="Log me out."></form>
+    </p>
+    {% endif %}
 {% endblock %}

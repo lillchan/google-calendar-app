@@ -1,11 +1,9 @@
 {% extends "layout.html" %}
 {% block content %}
-    <form action="/logout"><input type="submit" value="Logout"></form>
-    
     <form action="/search_events" method="POST" id="searchApptsForm">
         <fieldset>
             <label><strong>First, please select the calendar you would like to search:</strong></label>
-            <select name="calendarlist" value="choose a calendar" class="select-block span4">
+            <select name="calendarlist" value="choose a calendar" class="select-block span5">
                 {% for calendar in calendar_list %}
                 <option value="{{ calendar['id'] }}">{{ calendar['summary'] }}</option>
                 {% endfor %}
@@ -23,7 +21,11 @@
             <label>Appointment End Time:</label>
             <input id="apptEndTime" name="apptEndTime" type="time"></input>
             <br>
-            <button id="submitApptSearch" type="submit" class="btn">Find Time</button>
+            <button id="submitApptSearch" type="submit" class="btn btn-large btn-primary">Find Time</button>
         </fieldset>
     </form>
+    <p align="right">
+        I'm done!
+        <form align="right" action="/logout"><input class="btn" type="submit" value="Log me out."></form>
+    </p>
 {% endblock %}
