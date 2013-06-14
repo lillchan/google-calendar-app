@@ -3,17 +3,27 @@ import json
 import urllib
 import urllib2
 import requests
-import config
+import os
 
-from flask import Flask, request, render_template, session, url_for, redirect, flash
+from flask import Flask, request, render_template, session, url_for, redirect, flash, send_from_directory
 from rfc3339 import rfc3339  # small library to format dates to rfc3339 strings (format for Google Calendar API requests)
 from flask_oauth import OAuth
 from dateutil import parser
 
+#environment variables
+PORT = int(os.environ.get('PORT', 5000))
+GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+REDIRECT_URI = os.environ.get('REDIRECT_URI')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+DEBUG = os.environ.get('DEBUG')
+
 app = Flask(__name__)
-app.debug = config.DEBUG
-app.secret_key = config.SECRET_KEY
-app.config.from_object(config)
+app.debug = DEBUG
+app.secret_key = SECRET_KEY
+app.port = PORT
+app.host = '0.0.0.0'
 oauth = OAuth()
 
 # to connect to a remote app create a OAuth object and register a remote app using remote_app()
@@ -26,8 +36,18 @@ google = oauth.remote_app('google',
     access_token_url='https://accounts.google.com/o/oauth2/token',
     access_token_method='POST',
     access_token_params={'grant_type': 'authorization_code'},
-    consumer_key=config.GOOGLE_CLIENT_ID,
-    consumer_secret=config.GOOGLE_CLIENT_SECRET)
+    consumer_key=GOOGLE_CLIENT_ID,
+    consumer_secret=GOOGLE_CLIENT_SECRET)
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory("/static", "favicon.ico")
 
 
 # welcome page has user log in to their google account
@@ -113,7 +133,7 @@ def login():
 
 
 # redirect_uri = '/authorized'
-@app.route(config.REDIRECT_URI)
+@app.route(REDIRECT_URI)
 @google.authorized_handler
 def authorized(resp):
     # error handling, in case resp is empty - user didn't give app access to their calendar
@@ -179,7 +199,7 @@ def generate_date_list(startdate, enddate, starttime, endtime, calendarid):
         end_rfc3339 = datetime_combine_rfc3339(current_date, apptEndTime)
         # create dictionary of data to send with request
         data = {}
-        data['key'] = config.GOOGLE_API_KEY
+        data['key'] = GOOGLE_API_KEY
         data['timeMin'] = start_rfc3339
         data['timeMax'] = end_rfc3339
         # url encode the data sending with the request
