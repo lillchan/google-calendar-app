@@ -238,12 +238,14 @@ def search_events():
     starttime = request.form['apptStartTime']
     enddate = request.form['apptEndDate']
     endtime = request.form['apptEndTime']
-    calendarid = request.form['calendarlist']
+    calendarIdTimezone = request.form['calendarlist'].split()
+    calendarid = calendarIdTimezone[0]
+    calendarTimezone = calendarIdTimezone[1]
     # format start and end times
     start_dt = datetime.datetime.strptime(starttime, '%H:%M').time()
     end_dt = datetime.datetime.strptime(endtime, '%H:%M').time()
-    start_formatted = start_dt.strftime("%I:%M%p")
-    end_formatted = end_dt.strftime("%I:%M%p")
+    start_formatted = start_dt.strftime("%-I:%M%p")
+    end_formatted = end_dt.strftime("%-I:%M%p")
     # get list of free dates (datetime objects)
     free_dates = generate_date_list(startdate, enddate, starttime, endtime, calendarid)
     print free_dates
@@ -252,7 +254,7 @@ def search_events():
     for date in free_dates:
         free_dates_string.append(date.strftime("%m/%d/%Y"))
     # send list of free dates to render on suggestions page
-    return render_template("suggestions.html", free_dates=free_dates_string, starttime=start_formatted, endtime=end_formatted, calendarid=calendarid)
+    return render_template("suggestions.html", free_dates=free_dates_string, starttime=start_formatted, endtime=end_formatted, calendarid=calendarid, timezone=calendarTimezone)
 
 
 @app.route("/schedule_event", methods=['POST'])
@@ -268,41 +270,98 @@ def schedule_event():
     apptDate = apptTime[0]
     apptStartTime = apptTime[1]
     apptEndTime = apptTime[2]
+    apptTimeZone = apptTime[3]
+    start_datetime = datetime.datetime.strptime(apptStartTime, '%H:%M%p').time()
+    start_formatted = start_datetime.strftime("%-I:%M%p")
+    end_datetime = datetime.datetime.strptime(apptEndTime, '%H:%M%p').time()
+    end_formatted = end_datetime.strftime("%-I:%M%p")
+    # data = {
+    #     'text': apptName + " at " + apptLocation + " on " + apptDate + " " + start_formatted + "-" + end_formatted,
+    #     'key': GOOGLE_API_KEY
+    # }
+    # data_encoded = urllib.urlencode(data)
     # convert datetime into rfc3339 format for Google API
     apptDateObject = datetime.datetime.strptime(apptDate, '%m/%d/%Y').date()
     apptStartTimeObject = datetime.datetime.strptime(apptStartTime, '%I:%M%p').time()
     apptEndTimeObject = datetime.datetime.strptime(apptEndTime, '%I:%M%p').time()
+    start_combined = datetime.datetime.combine(apptDateObject, apptStartTimeObject)
+    end_combined = datetime.datetime.combine(apptDateObject, apptEndTimeObject)
     # format start and end times for Google Calendar API call
-    start_rfc3339 = datetime_combine_rfc3339(apptDateObject, apptStartTimeObject)
-    end_rfc3339 = datetime_combine_rfc3339(apptDateObject, apptEndTimeObject)
+    start_rfc3339 = start_combined.strftime("%Y-%m-%dT%H:%M:00")
+    end_rfc3339 = end_combined.strftime("%Y-%m-%dT%H:%M:00")
+    # start_rfc3339 = datetime_combine_rfc3339(apptDateObject, apptStartTimeObject)
+    # end_rfc3339 = datetime_combine_rfc3339(apptDateObject, apptEndTimeObject)
     # put all the data needed with the post request into a dictionary
-    event = {}
-    event['summary'] = apptName
-    event['location'] = apptLocation
-    event['start'] = {'dateTime': start_rfc3339}
-    event['end'] = {'dateTime': end_rfc3339}
+    event = {
+        'summary': apptName,
+        'location': apptLocation,
+        'start': {
+            'dateTime': start_rfc3339,
+            'timeZone': apptTimeZone
+        },
+        'end': {
+            'dateTime': end_rfc3339,
+            'timeZone': apptTimeZone
+        }
+    }
+    # event['end'] = {'dateTime': end_rfc3339, 'timeZone': apptTimeZone}
+    # event['start'] = {'dateTime': start_rfc3339, 'timeZone': apptTimeZone}
+    # event['location'] = apptLocation
+    # event['summary'] = apptName
+    print event
+    print json.dumps(event)
     access_token = session.get('access_token')
     access_token = access_token[0]
     # form url for post request, including any variables that are required (calendar id)
     url = 'https://www.googleapis.com/calendar/v3/calendars/'
-    full_url = url + apptCalendarId + '/events?'
+    # full_url = url + apptCalendarId + '/events/quickAdd?' + data_encoded
+    full_url = url + apptCalendarId + '/events?key=' + GOOGLE_API_KEY
+    print full_url
     # don't forget to include the content type with the header, otherwise google won't be able to parse the data
     headers = {'Content-Type': 'application/json; charset=UTF-8', 'Authorization': 'OAuth ' + access_token}
     # use requests module to do a post request
     # json.dumps turns a list into a string (don't need to url encode this request)
     r = requests.post(full_url, data=json.dumps(event), headers=headers)
+    print r
+    # r = requests.post(full_url, headers=headers)
+    # data = urllib.urlencode(event)
+    # req = urllib2.Request(full_url, data, headers)
+    # try:
+        # open a url, which can either be a string or Request object
+        # urllib2.urlopen(url, data)
+        # res = urllib2.urlopen(req)
+        # print res
+    # except (urllib2.URLError,), e:
+        # if e.code == 401 or e.code == 403:
+            # Unauthorized - bad token
+            # delete token from session and redirect user to log in with google
+            # session.pop('access_token', None)
+            # return redirect(url_for('login'))
+        # return the error code
+        # return str(e.code)
+    # returns a string of the http response (schedule event details)
+    # response = res.read()
+    response = r.text
+    print response
+    # turn the response into a JSON object
+    # pull out the 'items', which is an array of calendar id's
+    resJSON = json.loads(response)
+    if resJSON.get('error'):
+        resJSON = None
+        return render_template("success.html", res=resJSON)
     # if successful, the response will include all the schedule event's details
     # first turn into a string
-    response = r.text
+    # response = r.text
+    # print response
     # then, turn into dictionary, so can pull out elements
-    resJSON = json.loads(response)
-    newApptName = resJSON['summary']
-    newApptStart = resJSON['start']['dateTime']
-    newApptEnd = resJSON['end']['dateTime']
-    newApptLoc = resJSON['location']
+    print resJSON
+    newApptName = resJSON.get('summary')
+    newApptStart = resJSON.get('start').get('dateTime')
+    newApptEnd = resJSON.get('end').get('dateTime')
+    newApptLoc = resJSON.get('location')
     # format datetimes
-    start_formatted = parser.parse(newApptStart).strftime("%m/%d/%Y at %I:%M%p")
-    end_formatted = parser.parse(newApptEnd).strftime("%m/%d/%Y at %I:%M%p")
+    start_formatted = parser.parse(newApptStart).strftime("%m/%d/%Y at %-I:%M%p")
+    end_formatted = parser.parse(newApptEnd).strftime("%m/%d/%Y at %-I:%M%p")
     print response
     return render_template("success.html", res=resJSON, apptName=newApptName, apptStart=start_formatted, apptEnd=end_formatted, apptLoc=newApptLoc)
 

@@ -5,7 +5,7 @@
             <label><strong>First, please select the calendar you would like to search:</strong></label>
             <select name="calendarlist" value="choose a calendar" class="select-block span5">
                 {% for calendar in calendar_list %}
-                <option value="{{ calendar['id'] }}">{{ calendar['summary'] }}</option>
+                <option value="{{ calendar['id'] }} {{ calendar['timeZone'] }}">{{ calendar['summary'] }}</option>
                 {% endfor %}
             </select>
 
